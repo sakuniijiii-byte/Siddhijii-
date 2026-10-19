@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mood Meter & Apology App</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Canvas Confetti CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        :root {
+            --bg-primary: #FFFDD0;
+            --bg-secondary: #FFF9E6;
+            --text-color: #2C3E50;
+            --card-bg: rgba(255, 255, 255, 0.75);
+            --card-border: rgba(255, 182, 193, 0.4);
+            --primary-pink: #FFB6C1;
+            --accent-pink: #FF6B8B;
+            --pastel-lavender: #E6E6FA;
+            --mint-green: #98FF98;
+            --mint-dark: #2E8B57;
+            --shadow: 0 15px 35px rgba(0,0,0,0.08);
+            --btn-shadow: 0 6px 16px rgba(255, 107, 139, 0.25);
+            --glass-blur: blur(12px);
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #1e1b2e;
+            --bg-secondary: #28243d;
+            --text-color: #f1f0f7;
+            --card-bg: rgba(40, 36, 61, 0.75);
+            --card-border: rgba(139, 92, 246, 0.3);
+            --primary-pink: #d946ef;
+            --accent-pink: #ec4899;
+            --pastel-lavender: #3b0764;
+            --mint-green: #10b981;
+            --mint-dark: #34d399;
+            --shadow: 0 15px 35px rgba(0,0,0,0.4);
+            --btn-shadow: 0 6px 16px rgba(236, 72, 153, 0.3);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Nunito', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary));
+            color: var(--text-color);
+            transition: background 0.5s ease, color 0.5s ease;
+            position: relative;
+        }
+
+        h1, h2, h3, .font-heading {
+            font-family: 'Fredoka One', cursive;
+        }
+
+        /* Background Floating Particles */
+        .bg-particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            font-size: 1.8rem;
+            opacity: 0.35;
+            animation: floatUp 14s infinite linear;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(105vh) rotate(0deg) scale(0.8); opacity: 0; }
+            10% { opacity: 0.4; }
+            90% { opacity: 0.4; }
+            100% { transform: translateY(-10vh) rotate(360deg) scale(1.2); opacity: 0; }
+        }
+
+        .top-controls {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            display: flex;
+            gap: 10px;
+            z-index: 50;
+        }
+
+        .icon-btn {
+            background: var(--card-bg);
+            border: 2px solid var(--card-border);
+            backdrop-filter: var(--glass-blur);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.3s ease;
+            color: var(--text-color);
+        }
+
+        .icon-btn:hover {
+            transform: scale(1.1);
+        }
+
+        main.container {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 2px solid var(--card-border);
+            border-radius: 28px;
+            padding: 28px 24px;
+            width: 100%;
+            max-width: 460px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        /* Mascot Styles */
+        .mascot-container {
+            width: 110px;
+            height: 110px;
+            margin-bottom: 12px;
+            position: relative;
+            transition: transform 0.3s ease;
+        }
+
+        .mascot-svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 8px 12px rgba(0,0,0,0.1));
+            transition: all 0.3s ease;
+        }
+
+        /* Title & Status Header */
+        .app-title {
+            font-size: 1.8rem;
+            color: var(--accent-pink);
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+        }
+
+        .app-subtitle {
+            font-size: 0.95rem;
+            opacity: 0.85;
+            font-weight: 600;
+            margin-bottom: 18px;
+            min-height: 24px;
+            transition: color 0.3s ease;
+        }
+
+        .meter-wrapper {
+            width: 100%;
+            margin-bottom: 22px;
+        }
+
+        .meter-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .meter-bar {
+            width: 100%;
+            height: 18px;
+            background: rgba(0, 0, 0, 0.08);
+            border-radius: 12px;
+            overflow: hidden;
+            padding: 3px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .meter-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: 8px;
+            background: linear-gradient(90deg, #64b5f6, #ff80ab);
+            transition: width 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.5s ease;
+        }
+
+        .buttons-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            position: relative;
+            min-height: 220px;
+        }
+
+        .mood-btn {
+            width: 100%;
+            padding: 14px 18px;
+            border: none;
+            border-radius: 16px;
+            font-size: 1rem;
+            font-weight: 800;
+            cursor: pointer;
+            position: relative;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease, background 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            outline: none;
+        }
+
+        .mood-btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn-tier-1, .btn-tier-2, .btn-tier-3 {
+            background: #ffffff;
+            color: #4a5568;
+            border: 2px solid #e2e8f0;
+        }
+
+        [data-theme="dark"] .btn-tier-1,
+        [data-theme="dark"] .btn-tier-2,
+        [data-theme="dark"] .btn-tier-3 {
+            background: #2d3748;
+            color: #e2e8f0;
+            border-color: #4a5568;
+        }
+
+        .btn-tier-4 {
+            background: linear-gradient(135deg, var(--accent-pink), var(--primary-pink));
+            color: white;
+            box-shadow: var(--btn-shadow);
+            font-size: 1.05rem;
+            animation: pulseGlow 2s infinite alternate;
+        }
+
+        @keyframes pulseGlow {
+            0% { transform: scale(1); box-shadow: 0 4px 14px rgba(255, 107, 139, 0.3); }
+            100% { transform: scale(1.02); box-shadow: 0 8px 22px rgba(255, 107, 139, 0.5); }
+        }
+
+        /* Runaway dynamic placement class */
+        .runaway {
+            position: fixed !important;
+            z-index: 40 !important;
+            width: auto !important;
+            min-width: 180px;
+            padding: 12px 20px !important;
+            transition: left 0.15s ease-out, top 0.15s ease-out !important;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
+        }
+
+        /* Tooltip Helper */
+        .tooltip {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .mood-btn:hover .tooltip {
+            opacity: 1;
+        }
+
+        /* Badge Counter */
+        .attempts-badge {
+            margin-top: 12px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--accent-pink);
+            background: rgba(255, 107, 139, 0.1);
+            padding: 4px 12px;
+            border-radius: 20px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        /* Cursor Particle Effects */
+        .cursor-particle {
+            position: fixed;
+            pointer-events: none;
+            font-size: 1.1rem;
+            z-index: 9999;
+            animation: fadeOutParticle 0.8s forwards ease-out;
+        }
+
+        @keyframes fadeOutParticle {
+            0% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+            100% { transform: translate(-50%, -80px) scale(0.3) rotate(45deg); opacity: 0; }
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-card {
+            background: var(--bg-secondary);
+            border: 2px solid var(--primary-pink);
+            border-radius: 28px;
+            width: 100%;
+            max-width: 520px;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 28px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+            transform: scale(0.8) translateY(20px);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-align: center;
+            color: var(--text-color);
+        }
+
+        .modal-overlay.active .modal-card {
+            transform: scale(1) translateY(0);
+        }
+
+        .apology-letter {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 18px;
+            text-align: left;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin: 16px 0;
+            border-left: 4px solid var(--accent-pink);
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.02);
+        }
+
+        /* Photo Polaroid Frame */
+        .polaroid-frame {
+            background: white;
+            padding: 10px 10px 24px 10px;
+            border-radius: 4px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+            transform: rotate(-2deg);
+            margin: 16px auto;
+            max-width: 220px;
+            position: relative;
+        }
+
+        .polaroid-frame::after {
+            content: '❤️ Memory';
+            font-family: 'Fredoka One', cursive;
+            font-size: 0.85rem;
+            color: #666;
+            position: absolute;
+            bottom: 4px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+        }
+
+        .polaroid-img {
+            width: 100%;
+            height: 140px;
+            object-fit: cover;
+            border-radius: 2px;
+            background: #eee;
+        }
+
+        /* Coupons Grid */
+        .coupons-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin: 18px 0;
+        }
+
+        .coupon-card {
+            background: var(--card-bg);
+            border: 2px dashed var(--primary-pink);
+            border-radius: 16px;
+            padding: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s ease;
+        }
+
+        .coupon-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .coupon-info {
+            text-align: left;
+        }
+
+        .coupon-title {
+            font-weight: 800;
+            font-size: 0.95rem;
+            color: var(--accent-pink);
+        }
+
+        .coupon-sub {
+            font-size: 0.75rem;
+            opacity: 0.8;
+        }
+
+        .redeem-btn {
+            background: var(--mint-green);
+            color: #1a4d2e;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background 0.2s ease, transform 0.1s ease;
+            white-space: nowrap;
+        }
+
+        .redeem-btn.redeemed {
+            background: #cbd5e1;
+            color: #64748b;
+            cursor: default;
+        }
+
+        /* Modal Actions */
+        .modal-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 14px;
+            border: none;
+            font-weight: 800;
+            font-size: 0.95rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: transform 0.2s ease;
+        }
+
+        .btn-share {
+            background: #25D366;
+            color: white;
+        }
+
+        .btn-calendar {
+            background: #4285F4;
+            color: white;
+        }
+
+        .btn-close {
+            background: transparent;
+            color: var(--text-color);
+            border: 2px solid var(--card-border);
+        }
+
+        /* Screen burst overlay effect */
+        .screen-burst {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 90;
+            background: radial-gradient(circle, rgba(255,182,193,0.6) 0%, rgba(255,255,255,0) 70%);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .screen-burst.active {
+            animation: burstPulse 0.8s ease-out forwards;
+        }
+
+        @keyframes burstPulse {
+            0% { opacity: 1; transform: scale(0.5); }
+            50% { opacity: 0.8; transform: scale(1.2); }
+            100% { opacity: 0; transform: scale(1.5); }
+        }
+
+        /* Print Voucher Styles */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .modal-card, .modal-card * {
+                visibility: visible;
+            }
+            .modal-card {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                box-shadow: none;
+                border: 2px solid #000;
+            }
+            .modal-actions, .top-controls {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .card {
+                padding: 20px 16px;
+            }
+            .app-title {
+                font-size: 1.5rem;
+            }
+            .mood-btn {
+                padding: 12px 14px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-particles" id="bgParticles"></div>
+    <div class="screen-burst" id="screenBurst"></div>
+
+    <!-- Top Corner Controls -->
+    <div class="top-controls">
+        <button class="icon-btn" id="soundToggleBtn" aria-label="Toggle Sound" title="Toggle Sound">🔊</button>
+        <button class="icon-btn" id="themeToggleBtn" aria-label="Toggle Dark Mode" title="Toggle Theme">🌙</button>
+    </div>
+
+    <main class="container">
+        <section class="card">
+            <!-- Animated Mascot SVG -->
+            <div class="mascot-container" id="mascotContainer">
+                <svg class="mascot-svg" id="mascotSvg" viewBox="0 0 100 100">
+                    <!-- Base Boba Cup Mascot -->
+                    <rect x="25" y="30" width="50" height="55" rx="12" fill="#FFE4E1" stroke="#2C3E50" stroke-width="3"/>
+                    <path d="M 20 30 L 80 30 L 75 22 L 25 22 Z" fill="#FFB6C1" stroke="#2C3E50" stroke-width="3"/>
+                    <rect x="46" y="8" width="8" height="20" rx="3" fill="#FF6B8B" stroke="#2C3E50" stroke-width="2" transform="rotate(10 50 15)"/>
+                    
+                    <!-- Eyes (Normal State) -->
+                    <g id="mascotEyes">
+                        <circle cx="40" cy="50" r="4" fill="#2C3E50"/>
+                        <circle cx="60" cy="50" r="4" fill="#2C3E50"/>
+                        <circle cx="42" cy="48" r="1.5" fill="#FFF"/>
+                        <circle cx="62" cy="48" r="1.5" fill="#FFF"/>
+                    </g>
+                    
+                    <!-- Blushing Cheeks -->
+                    <circle cx="33" cy="56" r="5" fill="#FF80AB" opacity="0.6"/>
+                    <circle cx="67" cy="56" r="5" fill="#FF80AB" opacity="0.6"/>
+                    
+                    <!-- Mouth (Normal Smile) -->
+                    <path id="mascotMouth" d="M 43 58 Q 50 64 57 58" fill="none" stroke="#2C3E50" stroke-width="3" stroke-linecap="round"/>
+                    
+                    <!-- Boba Pearls -->
+                    <circle cx="35" cy="72" r="4" fill="#2C3E50"/>
+                    <circle cx="50" cy="74" r="4" fill="#2C3E50"/>
+                    <circle cx="65" cy="71" r="4" fill="#2C3E50"/>
+                    <circle cx="42" cy="78" r="3.5" fill="#2C3E50"/>
+                    <circle cx="58" cy="78" r="3.5" fill="#2C3E50"/>
+
+                    <!-- Dynamic Accessory Layer (Nervous Sweat / Pizza) -->
+                    <g id="mascotAccessory"></g>
+                </svg>
+            </div>
+
+            <!-- Dynamic Headers -->
+            <h1 class="app-title" id="appTitle">Current Mood Status</h1>
+            <p class="app-subtitle" id="appSubtitle">Please select your current emotional state 🥺</p>
+
+            <!-- Forgiveness Meter -->
+            <div class="meter-wrapper">
+                <div class="meter-header">
+                    <span>Forgiveness Gauge</span>
+                    <span id="meterPercentText">0%</span>
+                </div>
+                <div class="meter-bar">
+                    <div class="meter-fill" id="meterFill"></div>
+                </div>
+            </div>
+
+            <!-- Interactive Buttons Grid -->
+            <div class="buttons-container" id="buttonsContainer">
+                <button class="mood-btn btn-tier-1" data-tier="1" id="btnTier1">
+                    <span>Super Furious! 🤬</span>
+                    <span class="tooltip">Danger Zone! ⚡</span>
+                </button>
+
+                <button class="mood-btn btn-tier-2" data-tier="2" id="btnTier2">
+                    <span>A Little Annoyed 😒</span>
+                    <span class="tooltip">Ice Cold Side-Eye ❄️</span>
+                </button>
+
+                <button class="mood-btn btn-tier-3" data-tier="3" id="btnTier3">
+                    <span>Still Processing... 🛑</span>
+                    <span class="tooltip">Deliberating Sentence ⚖️</span>
+                </button>
+
+                <button class="mood-btn btn-tier-4" data-tier="4" id="btnTier4">
+                    <span>Ready to Forgive (if bribed) 🍕</span>
+                    <span class="tooltip">Click to claim peace offering! ✨</span>
+                </button>
+            </div>
+
+            <div class="attempts-badge" id="attemptsBadge">Attempts escaped: 0 😜</div>
+        </section>
+    </main>
+
+    <div class="modal-overlay" id="apologyModal" role="dialog" aria-modal="true">
+        <div class="modal-card">
+            <h2 class="font-heading" style="color: var(--accent-pink); font-size: 1.8rem;">Apology Accepted! 🎉</h2>
+            <p style="font-weight: 700; font-size: 0.9rem; opacity: 0.8; margin-top: 4px;">Peace Treaty Formally Signed 🕊️</p>
+
+            <!-- Polaroid Memory Frame -->
+            <div class="polaroid-frame">
+                <img src="https://placehold.co/400x300/FFB6C1/2C3E50?text=Us+Being+Cute" alt="Cute Memory" class="polaroid-img" id="polaroidImg">
+            </div>
+
+            <!-- Heartfelt Apology Letter -->
+            <div class="apology-letter" id="apologyLetter">
+                Dearest <strong id="letterHerName">Cutie</strong>,<br><br>
+                I am truly so sorry for <span id="letterReason">being a silly dummy</span>. You mean the world to me, and making you frown is the absolute last thing I ever want to do. Please accept my official truce along with these redeemable coupons! ❤️
+                <br><br>
+                With all my love,<br>
+                <strong id="letterYourName">Your Dummy</strong>
+            </div>
+
+            <!-- Redeemable Coupons -->
+            <h3 class="font-heading" style="text-align: left; font-size: 1.1rem; margin-top: 16px;">Your Bribe Coupons:</h3>
+            <div class="coupons-grid" id="couponsGrid">
+                <!-- Injected via JS -->
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="modal-actions">
+                <button class="action-btn btn-share" id="btnShareWhatsApp">
+                    <span>💬 Send Confirmation to Him</span>
+                </button>
+                <button class="action-btn btn-calendar" id="btnCalendarDate">
+                    <span>📅 Schedule Peace Offering Date</span>
+                </button>
+                <button class="action-btn btn-close" id="btnCloseModal">
+                    <span>Close & Keep Peace ❤️</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration Object (Easily customizable)
+        const CONFIG = {
+            herName: "Cutie",
+            yourName: "Your Dummy",
+            reason: "being a silly dummy",
+            apologyMessage: "Shanti se maan ja nhi to kidnap ho jaegi☺️.",
+            maxRunawayAttempts: 8,
+            coupons: [
+                { id: "argument", title: "1x Win Any Argument Pass 🏆", sub: "Instant victory card with zero debate allowed.", code: "I am redeeming my 'Win Any Argument' coupon! 🏆" },
+                { id: "joke", title: "1x Tell Me a Funny Joke 🎭", sub: "Cheer me up with your best joke right now.", code: "I am redeeming my 'Listen to a Joke' coupon! Tell me something funny! 🎭" },
+                { id: "song", title: "1x Dedicated Song Pick 🎵", sub: "Sing or send me a special song chosen by me.", code: "I am redeeming my 'Get a Song' coupon! I want my song! 🎵" }
+            ]
+        };
+
+        // Application State
+        const state = {
+            soundEnabled: true,
+            isDarkMode: false,
+            runawayAttempts: 0,
+            forgiven: false,
+            audioCtx: null
+        };
+
+        // DOM Element References
+        const elements = {
+            soundToggleBtn: document.getElementById('soundToggleBtn'),
+            themeToggleBtn: document.getElementById('themeToggleBtn'),
+            mascotSvg: document.getElementById('mascotSvg'),
+            mascotEyes: document.getElementById('mascotEyes'),
+            mascotMouth: document.getElementById('mascotMouth'),
+            mascotAccessory: document.getElementById('mascotAccessory'),
+            meterFill: document.getElementById('meterFill'),
+            meterPercentText: document.getElementById('meterPercentText'),
+            appSubtitle: document.getElementById('appSubtitle'),
+            attemptsBadge: document.getElementById('attemptsBadge'),
+            btnTier1: document.getElementById('btnTier1'),
+            btnTier2: document.getElementById('btnTier2'),
+            btnTier3: document.getElementById('btnTier3'),
+            btnTier4: document.getElementById('btnTier4'),
+            apologyModal: document.getElementById('apologyModal'),
+            btnCloseModal: document.getElementById('btnCloseModal'),
+            screenBurst: document.getElementById('screenBurst'),
+            couponsGrid: document.getElementById('couponsGrid'),
+            letterHerName: document.getElementById('letterHerName'),
+            letterYourName: document.getElementById('letterYourName'),
+            letterReason: document.getElementById('letterReason'),
+            btnShareWhatsApp: document.getElementById('btnShareWhatsApp'),
+            btnCalendarDate: document.getElementById('btnCalendarDate'),
+            bgParticles: document.getElementById('bgParticles')
+        };
+
+        function initAudio() {
+            if (!state.audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                state.audioCtx = new AudioContext();
+            }
+        }
+
+        function playSound(type) {
+            if (!state.soundEnabled) return;
+            try {
+                initAudio();
+                const ctx = state.audioCtx;
+                if (ctx.state === 'suspended') ctx.resume();
+
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                const now = ctx.currentTime;
+
+                if (type === 'boing') {
+                    // Evasive runaway sound
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.exponentialRampToValueAtTime(400, now + 0.15);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                } else if (type === 'pop') {
+                    // Button click sound
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.exponentialRampToValueAtTime(150, now + 0.08);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                } else if (type === 'fanfare') {
+                    // Celebratory chime chord
+                    const freqs = [523.25, 659.25, 783.99, 1046.50]; // C Major Chord
+                    freqs.forEach((freq, idx) => {
+                        const o = ctx.createOscillator();
+                        const g = ctx.createGain();
+                        o.type = 'triangle';
+                        o.frequency.setValueAtTime(freq, now + idx * 0.08);
+                        g.gain.setValueAtTime(0.2, now + idx * 0.08);
+                        g.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.5);
+                        o.connect(g);
+                        g.connect(ctx.destination);
+                        o.start(now + idx * 0.08);
+                        o.stop(now + idx * 0.08 + 0.5);
+                    });
+                }
+            } catch (e) {
+                console.log("Audio play error:", e);
+            }
+        }
+
+        function parseURLParameters() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('herName')) CONFIG.herName = urlParams.get('herName');
+            if (urlParams.has('hisName')) CONFIG.yourName = urlParams.get('hisName');
+            if (urlParams.has('reason')) CONFIG.reason = urlParams.get('reason');
+
+            elements.letterHerName.textContent = CONFIG.herName;
+            elements.letterYourName.textContent = CONFIG.yourName;
+            elements.letterReason.textContent = CONFIG.reason;
+        }
+
+        function createBackgroundParticles() {
+            const symbols = ['🌸', '✨', '☁️', '💖', '🎀'];
+            for (let i = 0; i < 15; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.animationDelay = `${Math.random() * 12}s`;
+                particle.style.animationDuration = `${10 + Math.random() * 8}s`;
+                elements.bgParticles.appendChild(particle);
+            }
+        }
+
+        function spawnCursorParticle(x, y) {
+            const particle = document.createElement('div');
+            particle.className = 'cursor-particle';
+            particle.textContent = Math.random() > 0.5 ? '💖' : '✨';
+            particle.style.left = `${x}px`;
+            particle.style.top = `${y}px`;
+            document.body.appendChild(particle);
+            setTimeout(() => particle.remove(), 800);
+        }
+
+        let lastParticleTime = 0;
+        window.addEventListener('mousemove', (e) => {
+            const now = Date.now();
+            if (now - lastParticleTime > 120) {
+                spawnCursorParticle(e.clientX, e.clientY);
+                lastParticleTime = now;
+            }
+        });
+
+        function updateMascot(stateType) {
+            if (stateType === 'nervous') {
+                elements.mascotMouth.setAttribute('d', 'M 43 62 Q 50 56 57 62'); // Wavy worried mouth
+                elements.mascotAccessory.innerHTML = `
+                    <path d="M 72 40 Q 75 35 78 40 Q 78 45 72 40" fill="#64B5F6"/> <!-- Sweat drop -->
+                `;
+            } else if (stateType === 'bribe') {
+                elements.mascotMouth.setAttribute('d', 'M 42 56 Q 50 68 58 56'); // Big happy smile
+                elements.mascotAccessory.innerHTML = `
+                    <text x="12" y="50" font-size="20">🍕</text> <!-- Pizza slice -->
+                `;
+            } else if (stateType === 'happy') {
+                elements.mascotMouth.setAttribute('d', 'M 40 54 Q 50 70 60 54');
+                elements.mascotAccessory.innerHTML = `
+                    <text x="68" y="45" font-size="18">💖</text>
+                `;
+            } else {
+                // Default
+                elements.mascotMouth.setAttribute('d', 'M 43 58 Q 50 64 57 58');
+                elements.mascotAccessory.innerHTML = '';
+            }
+        }
+
+        function setupRunawayButton(btn) {
+            const escape = (evt) => {
+                if (state.forgiven) return;
+
+                if (state.runawayAttempts >= CONFIG.maxRunawayAttempts) {
+                    // Decaying resistance safety valve
+                    btn.classList.remove('runaway');
+                    btn.style.left = 'auto';
+                    btn.style.top = 'auto';
+                    btn.querySelector('span').textContent = "Okay fine, you caught me! 🥺";
+                    return;
+                }
+
+                // Increment counter
+                state.runawayAttempts++;
+                elements.attemptsBadge.textContent = `Attempts escaped: ${state.runawayAttempts} 😜`;
+                elements.attemptsBadge.style.opacity = '1';
+
+                // Haptic feedback
+                if (navigator.vibrate) navigator.vibrate([30]);
+
+                // Play evasive sound
+                playSound('boing');
+
+                // Mascot reaction
+                updateMascot('nervous');
+
+                // Compute new coordinates staying inside viewport padding bounds
+                const btnWidth = btn.offsetWidth || 180;
+                const btnHeight = btn.offsetHeight || 44;
+                const padding = 24;
+
+                const maxX = window.innerWidth - btnWidth - padding;
+                const maxY = window.innerHeight - btnHeight - padding;
+
+                const newX = Math.max(padding, Math.floor(Math.random() * maxX));
+                const newY = Math.max(padding, Math.floor(Math.random() * maxY));
+
+                btn.classList.add('runaway');
+                btn.style.left = `${newX}px`;
+                btn.style.top = `${newY}px`;
+
+                // Subtitle update
+                elements.appSubtitle.textContent = "Nice try! That button is playing hard to get! 🏃‍♂️💨";
+                elements.appSubtitle.style.color = "var(--accent-pink)";
+            };
+
+            // Touch support
+            btn.addEventListener('touchstart', (e) => {
+                if (state.runawayAttempts < CONFIG.maxRunawayAttempts) {
+                    e.preventDefault();
+                    escape(e);
+                }
+            });
+
+            // Proximity/Hover check
+            btn.addEventListener('mouseenter', escape);
+        }
+
+        // Apply runaway to Tier 1, 2, 3 buttons
+        [elements.btnTier1, elements.btnTier2, elements.btnTier3].forEach(btn => {
+            setupRunawayButton(btn);
+
+            btn.addEventListener('click', () => {
+                if (state.runawayAttempts >= CONFIG.maxRunawayAttempts) {
+                    playSound('pop');
+                    alert(`Okay okay! You win! Please forgive me using the pizza button! 🍕❤️`);
+                }
+            });
+        });
+
+        // Hover effect for Tier 4 (Bribe) button
+        elements.btnTier4.addEventListener('mouseenter', () => {
+            updateMascot('bribe');
+            elements.meterFill.style.width = '100%';
+            elements.meterPercentText.textContent = '100%';
+            elements.appSubtitle.textContent = "Click below to accept the official truce! ✨";
+            elements.appSubtitle.style.color = "var(--mint-dark)";
+        });
+
+        elements.btnTier4.addEventListener('mouseleave', () => {
+            if (!state.forgiven) {
+                updateMascot('default');
+                elements.meterFill.style.width = '0%';
+                elements.meterPercentText.textContent = '0%';
+                elements.appSubtitle.textContent = "Please select your current emotional state 🥺";
+                elements.appSubtitle.style.color = "var(--text-color)";
+            }
+        });
+
+        elements.btnTier4.addEventListener('click', triggerForgiveness);
+
+        function triggerForgiveness() {
+            state.forgiven = true;
+            localStorage.setItem('apology_app_forgiven', 'true');
+
+            // Sound & Mascot
+            playSound('fanfare');
+            updateMascot('happy');
+
+            // Screen burst animation
+            elements.screenBurst.classList.add('active');
+            setTimeout(() => elements.screenBurst.classList.remove('active'), 800);
+
+            // Progress bar max out
+            elements.meterFill.style.width = '100%';
+            elements.meterPercentText.textContent = '100%';
+
+            // Multi-stage confetti burst
+            if (window.confetti) {
+                const count = 200;
+                const defaults = { origin: { y: 0.7 } };
+
+                function fire(particleRatio, opts) {
+                    confetti(Object.assign({}, defaults, opts, {
+                        particleCount: Math.floor(count * particleRatio)
+                    }));
+                }
+
+                fire(0.25, { spread: 26, startVelocity: 55, colors: ['#FFB6C1', '#FF6B8B'] });
+                fire(0.2, { spread: 60 });
+                fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
+                fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, colors: ['#98FF98', '#E6E6FA'] });
+                fire(0.1, { spread: 120, startVelocity: 45 });
+            }
+
+            // Show Modal after short delay
+            setTimeout(() => {
+                elements.apologyModal.classList.add('active');
+            }, 500);
+        }
+
+        function renderCoupons() {
+            elements.couponsGrid.innerHTML = '';
+            CONFIG.coupons.forEach(coupon => {
+                const card = document.createElement('div');
+                card.className = 'coupon-card';
+                card.innerHTML = `
+                    <div class="coupon-info">
+                        <div class="coupon-title">${coupon.title}</div>
+                        <div class="coupon-sub">${coupon.sub}</div>
+                    </div>
+                    <button class="redeem-btn" data-code="${coupon.code}">Redeem 🎟️</button>
+                `;
+                elements.couponsGrid.appendChild(card);
+            });
+
+            // Bind redeem clicks
+            document.querySelectorAll('.redeem-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const button = e.currentTarget;
+                    if (button.classList.contains('redeemed')) return;
+
+                    const code = button.getAttribute('data-code');
+
+                    // Copy to clipboard fallback
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(code);
+                    } else {
+                        const tempInput = document.createElement('input');
+                        tempInput.value = code;
+                        document.body.appendChild(tempInput);
+                        tempInput.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(tempInput);
+                    }
+
+                    button.textContent = "REDEEMED! 🎟️";
+                    button.classList.add('redeemed');
+                    playSound('pop');
+
+                    if (window.confetti) {
+                        confetti({ particleCount: 30, spread: 50, origin: { y: 0.6 } });
+                    }
+
+                    // Open pre-loaded Telegram message
+                    const encodedMsg = encodeURIComponent(code);
+                    window.open(`https://t.me/Idkxyz1?text=${encodedMsg}`, '_blank');
+                });
+            });
+        }
+
+        elements.btnCloseModal.addEventListener('click', () => {
+            elements.apologyModal.classList.remove('active');
+        });
+
+        // WhatsApp Share
+        elements.btnShareWhatsApp.addEventListener('click', () => {
+            const text = encodeURIComponent(`I officially accepted your apology! Send me a message on Telegram ❤️`);
+            window.open(`https://t.me/Idkxyz1?text=${text}`, '_blank');
+        });
+
+        // WhatsApp Share
+        elements.btnShareWhatsApp.addEventListener('click', () => {
+            const text = encodeURIComponent(`I officially accepted your apology! Now pay up with my 🍕 pizza coupon! ❤️`);
+            window.open(`https://wa.me/?text=${text}`, '_blank');
+        });
+
+        // Google Calendar Date Night Link
+        elements.btnCalendarDate.addEventListener('click', () => {
+            const title = encodeURIComponent("Peace Offering Date Night 🍕❤️");
+            const details = encodeURIComponent("Official truce date night redeemed via Apology App!");
+            const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}`;
+            window.open(calendarUrl, '_blank');
+        });
+
+        // Theme Toggle
+        elements.themeToggleBtn.addEventListener('click', () => {
+            state.isDarkMode = !state.isDarkMode;
+            document.documentElement.setAttribute('data-theme', state.isDarkMode ? 'dark' : 'light');
+            elements.themeToggleBtn.textContent = state.isDarkMode ? '☀️' : '🌙';
+            playSound('pop');
+        });
+
+        // Sound Toggle
+        elements.soundToggleBtn.addEventListener('click', () => {
+            state.soundEnabled = !state.soundEnabled;
+            elements.soundToggleBtn.textContent = state.soundEnabled ? '🔊' : '🔇';
+            localStorage.setItem('apology_app_sound', state.soundEnabled);
+        });
+
+        // Keyboard Esc Support
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && elements.apologyModal.classList.contains('active')) {
+                elements.apologyModal.classList.remove('active');
+            }
+        });
+
+        window.onload = function() {
+            parseURLParameters();
+            createBackgroundParticles();
+            renderCoupons();
+
+            // Load saved sound preference
+            const savedSound = localStorage.getItem('apology_app_sound');
+            if (savedSound !== null) {
+                state.soundEnabled = savedSound === 'true';
+                elements.soundToggleBtn.textContent = state.soundEnabled ? '🔊' : '🔇';
+            }
+
+            // Check if already forgiven
+            if (localStorage.getItem('apology_app_forgiven') === 'true') {
+                elements.appSubtitle.textContent = "Status: Still Forgiven! ❤️";
+                elements.meterFill.style.width = '100%';
+                elements.meterPercentText.textContent = '100%';
+            }
+        };
+    </script>
+</body>
+</html>
